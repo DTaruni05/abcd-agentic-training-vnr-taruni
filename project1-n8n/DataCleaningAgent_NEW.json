@@ -1,0 +1,714 @@
+{
+  "name": "DataCleaningAgent_NEW",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k",
+          "mode": "list",
+          "cachedResultName": "DataCleaningAgent_Sample data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4cb6f36a-ec00-48d7-9a0e-8aeba6c83fe6",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "ws35Y6mQsAWbW9qk",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k",
+          "mode": "list",
+          "cachedResultName": "DataCleaningAgent_Sample data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "51ef8856-42fb-4aea-b828-de9b462c8789",
+      "name": "Get row(s) in sheet",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4bXVqeWgOHFNVar7",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item;\n\n// Initialize route and log\nitem.json._route = \"none\";\nitem.json._cleaningLog = [];\nconst valueKeys = Object.keys(item.json);\n\n// First, detect missing or invalid data for imputation\nfor (const key of valueKeys) {\n  const value = item.json[key];\n\n  if (value === null || value === undefined || value === \"\") {\n    item.json._route = \"impute\";\n    item.json._cleaningLog.push(`${key}: missing`);\n  }\n  // Validate email format\n  else if (key.toLowerCase().includes(\"email\") && typeof value === 'string' && !value.match(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/)) {\n    item.json._route = \"validate\";\n    item.json._cleaningLog.push(`${key}: invalid email`);\n  }\n  // Validate amount (numeric)\n  else if (key.toLowerCase().includes(\"amount\") && isNaN(Number(value))) {\n    item.json._route = \"validate\";\n    item.json._cleaningLog.push(`${key}: invalid amount`);\n  }\n  // Standardize country name\n  else if (key.toLowerCase().includes(\"country\") && typeof value === \"string\") {\n    item.json[key] = value.trim().replace(/india|IN|Bharat/gi, \"India\");\n  }\n}\n\n// After validation, if no issues, set route to \"summarize\"\nif (item.json._route === \"none\") {\n  item.json._route = \"summarize\";\n}\n\nreturn item;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "2d8afb09-2527-47a1-9f25-15ce6d8adbbb",
+      "name": "Orchestrator Function node"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json._route }}",
+                    "rightValue": "impute",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c1e955ec-e179-4e3a-a3bc-9572e46d2b23"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c65c66ac-c8cd-400e-9967-6e457d563cf7",
+                    "leftValue": "={{ $json._route }}",
+                    "rightValue": "validate",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d218739-edd2-438e-893c-f6a1a31f6485",
+                    "leftValue": "={{ $json._route }}",
+                    "rightValue": "summarize",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        624,
+        -16
+      ],
+      "id": "e4ef5a88-3764-459f-9fdc-7842666eb468",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "huggingFaceApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a data imputation agent. Return only suggestions for missing or empty fields in the row. For each, provide the column name, suggested imputed value, and imputation method in brackets. Omit any existing non-missing fields. Output a single concise string named 'Imputation Suggestions' summarizing only what's missing and imputed.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Row data: {{ Object.entries($json).map(([key, value]) => key + ': ' + (value || 'missing')).join(', ') }}\"\n    }\n  ],\n  \"model\": \"meta-llama/Llama-3.2-1B-Instruct:novita\",\n  \"stream\": false\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -192
+      ],
+      "id": "f5a03edd-9db5-4ae9-b560-7e6f4df05853",
+      "name": "Imputer Agent",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "aFDuRn3RP7DizsVT",
+          "name": "HuggingFaceApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://router.huggingface.co/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "huggingFaceApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a data validation agent. For each column mentioned in the cleaning log, show the column name, its value, and mark it as invalid. Output as a concise, comma-separated list. Ignore other columns.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Cleaning log: {{ $json._cleaningLog }}, Row: {{ $json }}\"\n    }\n  ],\n  \"model\": \"meta-llama/Llama-3.2-1B-Instruct:novita\",\n  \"stream\": false\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -16
+      ],
+      "id": "ae998413-d124-4419-86c5-09a911bf2224",
+      "name": "HTTP Request",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "aFDuRn3RP7DizsVT",
+          "name": "HuggingFaceApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "huggingFaceApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": \"Summarize this data cleaning log and results for this row: {{ Object.entries($json).map(([key, value]) => key + ': ' + value).join(', ') }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        976,
+        160
+      ],
+      "id": "aaa8a9a2-8405-406e-9f71-725ac97635e2",
+      "name": "HTTP Request1",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "aFDuRn3RP7DizsVT",
+          "name": "HuggingFaceApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1616,
+        -32
+      ],
+      "id": "a75776ba-5aaf-422d-bc57-cc2e6f85e552",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1168,
+        -192
+      ],
+      "id": "96ceb973-1808-4cd4-acb1-8117a4800e51",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // Extract imputation suggestions from the LLM output field\n  const suggestions = item.json.choices?.[0]?.message?.content || '';\n\n  // Clone original data JSON excluding LLM meta-fields\n  // Remove common LLM metadata keys if they exist\n  const cleanedData = {...item.json};\n  delete cleanedData.id;\n  delete cleanedData.object;\n  delete cleanedData.created;\n  delete cleanedData.model;\n  delete cleanedData.choices;\n  delete cleanedData.usage;\n  delete cleanedData.system_fingerprint;\n\n  // Add imputerSuggestions column with trimmed suggestions text\n  cleanedData.imputerSuggestions = suggestions.trim();\n\n  return { json: cleanedData };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        -192
+      ],
+      "id": "00e80e8d-dee9-482b-85ad-81176d1eea56",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1168,
+        -16
+      ],
+      "id": "c8dea3c6-26e7-4ae8-b6d7-1a7ffbf11b75",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1184,
+        160
+      ],
+      "id": "fe4dac6d-2131-4870-8f1d-bbe0f092950b",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // Extract imputation suggestions from the LLM output field\n  const suggestions = item.json.choices?.[0]?.message?.content || '';\n\n  // Clone original data JSON excluding LLM meta-fields\n  // Remove common LLM metadata keys if they exist\n  const cleanedData = {...item.json};\n  delete cleanedData.id;\n  delete cleanedData.object;\n  delete cleanedData.created;\n  delete cleanedData.model;\n  delete cleanedData.choices;\n  delete cleanedData.usage;\n  delete cleanedData.system_fingerprint;\n\n  // Add imputerSuggestions column with trimmed suggestions text\n  cleanedData.ValidatorSuggestions = suggestions.trim();\n\n  return { json: cleanedData };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -16
+      ],
+      "id": "071f8824-7d8d-4e54-b933-b048cc73cf9e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // Extract imputation suggestions from the LLM output field\n  const suggestions = item.json.choices?.[0]?.message?.content || '';\n\n  // Clone original data JSON excluding LLM meta-fields\n  // Remove common LLM metadata keys if they exist\n  const cleanedData = {...item.json};\n  delete cleanedData.id;\n  delete cleanedData.object;\n  delete cleanedData.created;\n  delete cleanedData.model;\n  delete cleanedData.choices;\n  delete cleanedData.usage;\n  delete cleanedData.system_fingerprint;\n\n  // Add imputerSuggestions column with trimmed suggestions text\n\n\n  return { json: cleanedData };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        160
+      ],
+      "id": "07c8a7bb-b227-417b-8405-b5ec97a67033",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k",
+          "mode": "list",
+          "cachedResultName": "DataCleaningAgent_Sample data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dk1cG7PwlPL11QmaIhMB2xmGs9rCXl82K4n8ZNq7q-k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Age",
+              "displayName": "Age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Country",
+              "displayName": "Country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "_route",
+              "displayName": "_route",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "_cleaningLog",
+              "displayName": "_cleaningLog",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ValidatorSuggestions",
+              "displayName": "ValidatorSuggestions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "imputerSuggestions",
+              "displayName": "imputerSuggestions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary_text",
+              "displayName": "summary_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        -16
+      ],
+      "id": "95bbf18a-0c77-4623-8892-559e3c76b5b0",
+      "name": "Update",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4bXVqeWgOHFNVar7",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Orchestrator Function node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orchestrator Function node": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Imputer Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Imputer Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Update": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5aa40d73-d27b-441b-8a19-e54aa3d467c7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e44daf4588d35b516bee1db371de3c55f4e4f466e94202e7233584ff70b3708e"
+  },
+  "id": "M3ZNwLQWZ8Sy4vMD",
+  "tags": []
+}
