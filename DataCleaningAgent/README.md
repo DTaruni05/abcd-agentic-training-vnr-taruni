@@ -31,6 +31,8 @@ Summarizer Agent: Generates readable summaries and cleaning audit logs.
 
 Merge & Update Nodes: Combine all agent outputs and update cleaned data back to Sheets.
 
+Architecture diagram:
+![Architecture Diagram](assets/Gemini_Generated_Image_1x0iby1x0iby1x0i.png)
 
 🧱 Workflow Summary
 
@@ -45,6 +47,9 @@ Agents (Hugging Face APIs) → Perform specific cleaning/validation tasks.
 Merge Nodes → Combine outputs from all agents.
 
 Update Node → Writes back clean, validated, and annotated data to Google Sheets.
+
+N8N workflow:
+![n8n workflow](Output screenshots\n8n nodes.png)
 
 🧰 Tech Stack
 
