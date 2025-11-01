@@ -32,22 +32,6 @@ Summarizer Agent: Generates readable summaries and cleaning audit logs.
 Merge & Update Nodes: Combine all agent outputs and update cleaned data back to Sheets.
 
 
-[ Google Sheets (Input) ]
-          |
-[Trigger]----->
-          |
-[Orchestrator (Function)] --------> { Switch: 'impute', 'validate', 'summarize' }
-          |                           |               |
-          |                           |               |
-[Imputer Agent]               [Validator Agent]  [Summarizer Agent]
-          |                           |               |
-          ----------------------------|---------------|
-                                      |
-                    [Merge & Process Functions]
-                                      |
-                     [Google Sheets (Output)]
-
-
 🧱 Workflow Summary
 
 Trigger → Detects data changes in Google Sheets.
